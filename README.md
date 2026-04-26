@@ -1,73 +1,110 @@
-# React + TypeScript + Vite
+# Emiant BMS Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Frontend dashboard for Battery Management System (BMS) monitoring built with React, TypeScript, and Vite.
 
-Currently, two official plugins are available:
+## Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- JWT based authentication flow (login and register)
+- Protected dashboard routes
+- Device inventory view
+- Live analytics view with board level telemetry charts
+- Admin page to register devices
+- Admin panel sections for:
+  - Newly added devices
+  - Config devices waiting for telemetry
 
-## React Compiler
+## Tech Stack
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- React 19
+- TypeScript
+- Vite
+- Axios
+- React Router
+- Recharts
 
-## Expanding the ESLint configuration
+## Project Structure
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+- src/pages: Route level pages (Dashboard, Devices, Analytics, Admin, Auth)
+- src/components: Shared UI and analytics components
+- src/services: API service layer and axios config
+- src/context: Auth context and role based state
+- src/styles: Page specific styles
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+## Environment Variables
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+Create a .env file in the project root with:
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```env
+VITE_API_URL=https://bms-backend-7ltx.onrender.com
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## Run Locally
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+1. Install dependencies:
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm install
 ```
+
+2. Start development server:
+
+```bash
+npm run dev
+```
+
+3. Build production bundle:
+
+```bash
+npm run build
+```
+
+4. Preview production build:
+
+```bash
+npm run preview
+```
+
+## Main Routes
+
+- /login - Login page
+- /register - Registration page
+- /dashboard - Dashboard KPIs
+- /devices - Device list
+- /analytics/:device_id - Device analytics
+- /alerts - Alerts page
+- /settings - User settings
+- /admin - Admin device registration
+
+## API Usage Summary
+
+Auth:
+
+- POST /api/auth/signup
+- POST /api/auth/login
+
+Devices and telemetry:
+
+- GET /api/devices
+- GET /api/devices/:id/latest
+- GET /api/devices/:id/data
+- GET /api/devices/:id/boards
+- GET /api/devices/:id/boards/:baddr/latest
+
+Device config and registration:
+
+- POST /api/devices/register
+- GET /api/devices/:id/config
+- PATCH /api/devices/:id/config (backend supported, not yet wired in UI)
+
+## Notes
+
+- GET /api/devices is telemetry driven. Newly registered devices may not appear there until telemetry exists.
+- Registered devices can be fetched individually through GET /api/devices/:id/config.
+- Device IDs are case sensitive.
+
+## Scripts
+
+- npm run dev: Start dev server
+- npm run build: Type check and build
+- npm run preview: Preview production build
+- npm run lint: Run ESLint
