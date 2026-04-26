@@ -1,0 +1,190 @@
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: system-ui, sans-serif;
+  background: #F5F7F6;
+  display: flex;
+  flex-direction: column;
+}
+
+.header {
+  background: #062E25;
+  color: white;
+  padding: 16px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.logo img {
+  max-width: 140px;
+  height: auto;
+  object-fit: contain;
+}
+.menu-btn {
+  width: 44px;
+  height: 44px;
+  color: white;
+  font-size:20px;
+  background-color: #062E25;
+  border-radius: 10px;
+  border: none;
+  cursor: pointer;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+
+.footer {
+  background: #062E25;
+  color: white;
+  padding: 16px;
+  display: flex;
+  justify-content: center;
+}
+
+
+.app {
+  display: flex;
+}
+
+.content {
+  
+  flex: 1;
+  padding: 24px;
+  background-color: #f0f1f3;
+}
+
+.sidebar {
+  width: 220px;
+  background: #062E25;
+  min-height: calc(100vh - 64px);
+  padding: 10px;
+  transition: width 0.3s, transform 0.3s;
+
+  display: flex;
+  flex-direction: column;
+}
+
+.sidebar.open {
+  width: 220px;
+}
+
+.sidebar.closed {
+  width: 63px;
+}
+
+.menu {
+  flex: 1;
+}
+
+.sidebar a {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  color: white;
+  border-radius: 6px;
+  margin-bottom: 6px;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.sidebar a.active,
+.sidebar a:hover {
+  background: #0F4D3E;
+}
+
+.sidebar a svg {
+  min-width: 20px;
+  flex-shrink: 0;
+}
+
+.link-text {
+  transition: opacity 0.2s, transform 0.2s;
+  white-space: nowrap;
+}
+
+.sidebar.closed .link-text {
+  opacity: 0;
+  transform: translateX(-10px);
+  pointer-events: none;
+}
+
+.sidebar.open .link-text {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+
+.user {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+
+.logout-btn {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 10px;
+  padding: 10px;
+  border: none;
+  background: none;
+  color: #f87171;
+  cursor: pointer;
+  width: 100%;
+    border-radius: 6px;
+  
+}
+
+.logout-btn:hover {
+  background: #7f1d1d;
+}
+.sidebar.closed .logout-btn span {
+  display: none;            /* hide text only */
+}
+
+.sidebar.closed .logout-btn svg {
+  min-width: 20px;          /* keep icon visible */
+}
+
+@media (max-width: 768px) {
+  .sidebar {
+    position: fixed;
+    top: 75px;
+    left: -240px;
+    width: 220px;
+    height: 100%;
+    background: #062E25;
+    z-index: 1000;
+    transition: left 0.3s ease;
+  }
+ .header{
+  position: fixed;
+  width:100%;
+  z-index: 1000;
+ }
+  .sidebar.open {
+    left: 0;
+  }
+
+  .app {
+    flex-direction: column;
+  }
+
+  .content {
+    padding: 16px;
+    position:relative;
+  top:75px;
+  }
+}

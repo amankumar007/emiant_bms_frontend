@@ -1,0 +1,51 @@
+.dashboard-root {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.dashboard-root .app {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+}
+
+.kpi-grid {
+  display: grid;
+ grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.kpi-card {
+  background: white;
+  padding: 16px;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+}
+
+.kpi-card p {
+  color: #6B7C76;
+  margin: 0;
+}
+
+.kpi-card h1 {
+  margin: 8px 0;
+  color: #062E25;
+}
+
+.kpi-card span {
+  font-size: 12px;
+  color: #6B7C76;
+}
+.kpi-card.green {
+  border-left: 6px solid #4CAF50;
+}
+
+.kpi-card.yellow {
+  border-left: 6px solid #F4B400;
+}
+
+.kpi-card.red {
+  border-left: 6px solid #D93025;
+}

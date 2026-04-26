@@ -1,0 +1,1343 @@
+{/* <Route
+          path="/dashboard"
+          element={
+            <Layout>
+              <Dashboard />
+            </Layout>
+          }
+        />
+        <Route
+          path="/devices"
+          element={
+            <Layout>
+              <Devices />
+            </Layout>
+          }
+        />
+        <Route
+          path="/analytics"
+          element={
+            <Layout>
+              <Analytics />
+            </Layout>
+          }
+        />
+        <Route
+          path="/alerts"
+          element={
+            <Layout>
+              <Alerts />
+            </Layout>
+          }
+        />
+        <Route
+          path="/settings"
+          element={
+            <Layout>
+              <Settings />
+            </Layout>
+          }
+        />
+        <Route
+          path="/admin"
+          element={
+            <Layout>
+              <Admin />
+            </Layout>
+          }
+        /> */}
+
+
+
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import Layout from "./components/Layout";
+import ProtectedRoute from "./components/ProtectedRoute";
+
+import Dashboard from "./pages/Dashboard";
+import Devices from "./pages/Devices";
+import Analytics from "./pages/Analytics";
+import Alerts from "./pages/Alerts";
+import Settings from "./pages/Settings";
+import Admin from "./pages/Admin";
+
+import Auth from "./pages/Auth";
+import Otp from "./pages/Otp";
+
+
+
+function App() {
+  return (
+    <BrowserRouter>
+      <Routes>
+
+
+        <Route path="/" element={<Auth />} />
+        <Route path="/register" element={<Auth />} />
+        <Route path="/login" element={<Auth />} />
+        <Route path="/otp" element={<Otp />} />
+        <Route  element={
+    <ProtectedRoute>
+      <Layout />
+    </ProtectedRoute>
+  }
+>
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/devices" element={<Devices />} />
+          <Route path="/analytics" element={<Analytics />} />
+          <Route path="/alerts" element={<Alerts />} />
+          <Route path="/settings" element={<Settings />} />
+          <Route path="/admin" element={<Admin />} />
+        </Route>
+        
+
+        
+      </Routes>
+    </BrowserRouter>
+  );
+}
+
+export default App;
+
+
+
+
+
+
+
+
+
+
+
+
+import { useEffect, useState } from "react";
+import { getDeviceHistory } from "../services/deviceService";
+import { Search } from "lucide-react";
+
+import "../styles/devices.css";
+
+type BatteryData = {
+  _id: string;
+  deviceId: string;
+  timestamp: string;
+  voltage: number;
+  current: number;
+  temperature: number;
+  status: string;
+};
+
+const Devices = () => {
+  const [deviceIdInput, setDeviceIdInput] = useState("");
+  const [selectedDevice, setSelectedDevice] = useState<string | null>(null);
+  const [batteryData, setBatteryData] = useState<BatteryData[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  /* ========================
+     Fetch Battery History
+     ======================== */
+  useEffect(() => {
+    if (!selectedDevice) return;
+
+    fetchDeviceHistory(selectedDevice);
+
+    const interval = setInterval(() => {
+      fetchDeviceHistory(selectedDevice);
+    }, 120000); // 2 minutes
+
+    return () => clearInterval(interval);
+  }, [selectedDevice]);
+
+  const handleDeviceLoad = () => {
+    if (!deviceIdInput.trim()) {
+      setError("Enter a device ID");
+      return;
+    }
+    setError("");
+    setSelectedDevice(deviceIdInput.trim());
+  };
+
+  const fetchDeviceHistory = async (deviceId: string) => {
+    setLoading(true);
+    try {
+      const data = await getDeviceHistory(deviceId);
+      setBatteryData(data);
+    } catch (err) {
+      setError("Failed to fetch device history");
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="devices-view">
+      {/* 🔍 Device ID */}
+      <div className="search-bar-container">
+          
+       <div className="search-input-wrap">
+  <Search size={18} color="gray" className="search-icon" />
+
+  <input
+    type="text"
+    placeholder="Enter device ID..."
+    value={deviceIdInput}
+    onChange={(e) => setDeviceIdInput(e.target.value)}
+  />
+</div>
+
+
+        <button className="add-device-btn" onClick={handleDeviceLoad}>
+          Load
+        </button>
+      </div>
+
+      {error && <p className="error">{error}</p>}
+
+      {/* 🔋 Battery Data (No Table) */}
+      <div>
+        <h2>Battery Data History</h2>
+
+        {selectedDevice ? (
+          loading ? (
+            <p>Loading data...</p>
+          ) : batteryData.length === 0 ? (
+            <p>No data available</p>
+          ) : (
+            <p>
+              Data loaded for <strong>{selectedDevice}</strong>
+            </p>
+          )
+        ) : (
+          <p>Select a device to view data</p>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default Devices;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+import { useEffect, useMemo, useState } from "react";
+import {
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  BarChart,
+  Bar,
+} from "recharts";
+import { getDummyDevices, getDummySnapshot } from "../services/deviceService";
+import { useNavigate, useParams } from "react-router-dom";
+import "../styles/analytics.css";
+
+type DummyDevice = {
+  device_id: string;
+  location: string;
+  status: string;
+  health: number;
+};
+
+type Snapshot = {
+  device_id: string;
+  timestamp: number;
+  cell_voltages: number[];
+  pack_voltage: number;
+  current_a: number;
+  temperatures: number[];
+  soc: number;
+};
+
+type AnalyticsPoint = {
+  time: string;
+  cells: number[];
+  current: number;
+  temps: number[];
+  packVoltage: number;
+  soc: number;
+};
+
+const CompactTooltip = ({
+  active,
+  payload,
+  label,
+}: {
+  active?: boolean;
+  payload?: Array<{ name?: string; value?: number }>;
+  label?: string;
+}) => {
+  if (!active || !payload || payload.length === 0) return null;
+
+  return (
+    <div
+      style={{
+        background: "#002D20",
+        padding: "8px",
+        borderRadius: "12px",
+        color: "white",
+        fontSize: "11px",
+        maxWidth: "220px",
+      }}
+    >
+      <div style={{ marginBottom: 4 }}>{label}</div>
+
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(4, 1fr)",
+          gap: "2px 8px",
+        }}
+      >
+        {payload.map((entry, i) => (
+          <div key={i}>
+            {(entry.name ?? "").replace("cell", "c")}:
+            {typeof entry.value === "number" ? entry.value.toFixed(2) : "--"}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+const Analytics = () => {
+  const navigate = useNavigate();
+  const { device_id: routeDeviceId } = useParams();
+  const [devices, setDevices] = useState<DummyDevice[]>([]);
+  const [selectedDeviceId, setSelectedDeviceId] = useState<string | null>(null);
+  const [data, setData] = useState<AnalyticsPoint[]>([]);
+  const [latestSnapshot, setLatestSnapshot] = useState<Snapshot | null>(null);
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [mode, setMode] = useState<"cells" | "currents" | "temps">("cells");
+
+  useEffect(() => {
+    const fetchDevices = async () => {
+      setLoading(true);
+      try {
+        const list = await getDummyDevices();
+        setError("");
+        setDevices(list);
+        if (list.length > 0) {
+          const routeMatch = routeDeviceId
+            ? list.find((device) => device.device_id === routeDeviceId)
+            : null;
+          if (routeMatch) {
+            setSelectedDeviceId(routeMatch.device_id);
+          } else {
+            setSelectedDeviceId((prev) => prev ?? list[0].device_id);
+          }
+        }
+      } catch (err) {
+        setError("Failed to fetch devices");
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDevices();
+  }, []);
+
+  useEffect(() => {
+    if (!routeDeviceId || devices.length === 0) return;
+    const exists = devices.some(
+      (device) => device.device_id === routeDeviceId
+    );
+    if (exists) {
+      setSelectedDeviceId(routeDeviceId);
+    }
+  }, [devices, routeDeviceId]);
+
+  useEffect(() => {
+    if (!selectedDeviceId) return;
+
+    const fetchSnapshot = async () => {
+      try {
+        const snapshot = await getDummySnapshot(selectedDeviceId);
+        setError("");
+        setLatestSnapshot(snapshot);
+        setData((prev) => {
+          const nextPoint: AnalyticsPoint = {
+            time: new Date(snapshot.timestamp).toLocaleTimeString(),
+            cells: snapshot.cell_voltages,
+            current: snapshot.current_a,
+            temps: snapshot.temperatures,
+            packVoltage: snapshot.pack_voltage,
+            soc: snapshot.soc,
+          };
+          return [...prev.slice(-29), nextPoint];
+        });
+      } catch (err) {
+        setError("Failed to fetch snapshot");
+        console.error(err);
+      }
+    };
+
+    fetchSnapshot();
+    const interval = setInterval(fetchSnapshot, 2000);
+
+    return () => clearInterval(interval);
+  }, [selectedDeviceId]);
+
+  useEffect(() => {
+    if (selectedDeviceId) {
+      navigate(`/analytics/${selectedDeviceId}`, { replace: true });
+    }
+  }, [navigate, selectedDeviceId]);
+
+  const summaryStats = useMemo(() => {
+    if (!latestSnapshot) {
+      return null;
+    }
+    const cellMax = Math.max(...latestSnapshot.cell_voltages);
+    const cellMin = Math.min(...latestSnapshot.cell_voltages);
+    const maxTemp = Math.max(...latestSnapshot.temperatures);
+    const imbalance = cellMax - cellMin;
+    
+    // Build individual cell voltage data for bar chart
+    const cellVoltageData = latestSnapshot.cell_voltages.map((voltage, index) => ({
+      cell: `C${index + 1}`,
+      voltage: parseFloat(voltage.toFixed(3)),
+    }));
+
+    return {
+      cellMax,
+      cellMin,
+      maxTemp,
+      imbalance,
+      cellVoltageData,
+    };
+  }, [latestSnapshot]);
+
+  /* ======================
+     TRANSFORM FOR RECHARTS
+     ====================== */
+  const chartData = data.map((d) => {
+    const row: Record<string, number | string> = { time: d.time };
+
+    if (mode === "cells") {
+      d.cells.forEach((v, i) => (row[`cell${i + 1}`] = v));
+    }
+
+    if (mode === "currents") {
+      row.current = d.current;
+    }
+
+    if (mode === "temps") {
+      d.temps.forEach((v, i) => (row[`temp${i + 1}`] = v));
+    }
+
+    return row;
+  });
+
+  /* ======================
+     LINES CONFIG
+     ====================== */
+  const renderLines = () => {
+    if (mode === "cells") {
+      return Array.from({ length: 16 }, (_, i) => (
+        <Line
+          key={i}
+          type="monotone"
+          dataKey={`cell${i + 1}`}
+          stroke={`hsl(${i * 20}, 70%, 55%)`}
+          strokeWidth={1.8}
+          dot={false}
+        />
+      ));
+    }
+
+    if (mode === "currents") {
+      return (
+        <Line
+          type="monotone"
+          dataKey="current"
+          stroke="#22d3ee"
+          strokeWidth={2}
+          dot={false}
+        />
+      );
+    }
+
+    return (
+      <>
+        <Line
+          type="monotone"
+          dataKey="temp1"
+          stroke="#ff6b6b"
+          strokeWidth={2}
+          dot={false}
+        />
+        <Line
+          type="monotone"
+          dataKey="temp2"
+          stroke="#ffa94d"
+          strokeWidth={2}
+          dot={false}
+        />
+      </>
+    );
+  };
+
+  return (
+    <>
+      <div className="analytics-header">
+        <div className="analytics-title">
+          <div className="analytics-title-row">
+            <h2>Analytics</h2>
+            <span className="live-indicator">
+              <span className="live-dot" /> Live
+            </span>
+          </div>
+          <p>Device: {selectedDeviceId ?? "--"}</p>
+        </div>
+
+        <div className="analytics-toolbar">
+          <div className="device-selector">
+            {devices.map((device) => (
+              <button
+                key={device.device_id}
+                className={`device-chip ${
+                  selectedDeviceId === device.device_id ? "active" : ""
+                }`}
+                onClick={() => setSelectedDeviceId(device.device_id)}
+                type="button"
+              >
+                {device.device_id}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {error && <p className="error">{error}</p>}
+      {loading && <p>Loading devices...</p>}
+
+      {latestSnapshot && summaryStats && (
+        <div className="summary-cards">
+          <div className="summary-card">
+            <span>SOC</span>
+            <strong>{latestSnapshot.soc}%</strong>
+            <p>State of charge</p>
+          </div>
+          <div className="summary-card">
+            <span>Pack Voltage</span>
+            <strong>{latestSnapshot.pack_voltage} V</strong>
+            <p>Nominal range</p>
+          </div>
+          <div className="summary-card">
+            <span>Current</span>
+            <strong>{latestSnapshot.current_a} A</strong>
+            <p>
+              {latestSnapshot.current_a >= 0 ? "Charging" : "Discharging"}
+            </p>
+          </div>
+          <div className="summary-card">
+            <span>Max Temp</span>
+            <strong>{summaryStats.maxTemp.toFixed(1)}°C</strong>
+            <p>Thermal headroom</p>
+          </div>
+          <div className="summary-card">
+            <span>Cell Imbalance</span>
+            <strong>{summaryStats.imbalance.toFixed(3)} V</strong>
+            <p>Max-min</p>
+          </div>
+        </div>
+      )}
+
+      <div className="mode-tabs">
+        <button
+          className={mode === "cells" ? "active" : ""}
+          onClick={() => setMode("cells")}
+        >
+          Cell Voltages
+        </button>
+
+        <button
+          className={mode === "currents" ? "active" : ""}
+          onClick={() => setMode("currents")}
+        >
+          Pack Current
+        </button>
+
+        <button
+          className={mode === "temps" ? "active" : ""}
+          onClick={() => setMode("temps")}
+        >
+          Temperature
+        </button>
+      </div>
+
+      <div className="chart-card-dark">
+        <div className="chart-header">
+          <div>
+            <h3>
+              {mode === "cells"
+                ? "Cell Voltages (V)"
+                : mode === "currents"
+                ? "Pack Current (A)"
+                : "Temperatures (°C)"}
+            </h3>
+            {mode === "cells" && summaryStats && (
+              <div className="cell-metrics">
+                <span>Max: {summaryStats.cellMax.toFixed(3)} V</span>
+                <span>Min: {summaryStats.cellMin.toFixed(3)} V</span>
+                <span>
+                  Difference: {summaryStats.imbalance.toFixed(3)} V
+                </span>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="chart-container chart-panel">
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={chartData}>
+              <CartesianGrid
+                stroke="rgba(255,255,255,0.05)"
+                vertical={false}
+              />
+              <XAxis
+                dataKey="time"
+                tick={{ fontSize: 11, fill: "rgba(255,255,255,0.5)" }}
+                axisLine={false}
+                tickLine={false}
+              />
+              <YAxis
+                tick={{ fontSize: 11, fill: "rgba(255,255,255,0.5)",height:"50%" }}
+                axisLine={false}
+                tickLine={false}
+                
+                domain={
+                  mode === "cells"
+                    ? [3, 4.3]
+                    : mode === "currents"
+                    ? ["auto", "auto"]
+                    : [20, 50]
+                }
+              />
+              <Tooltip
+                allowEscapeViewBox={{ x: false, y: false }}
+                content={<CompactTooltip />}
+              />
+              {renderLines()}
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+
+      {latestSnapshot && summaryStats && (
+        <div className="chart-card-dark">
+          <h3>Cell Voltage Distribution</h3>
+          <div className="chart-container bar-container">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={summaryStats.cellVoltageData}>
+                <CartesianGrid
+                  stroke="rgba(255,255,255,0.05)"
+                  vertical={false}
+                />
+                <XAxis
+                  dataKey="cell"
+                  tick={{ fontSize: 9, fill: "rgba(255,255,255,0.5)" }}
+                  axisLine={false}
+                  tickLine={false}
+                />
+                <YAxis
+                  tick={{ fontSize: 10, fill: "rgba(255,255,255,0.5)" }}
+                  axisLine={false}
+                  tickLine={false}
+                  domain={[3.6, 4.3]}
+                />
+                <Tooltip
+                  contentStyle={{
+                    background: "#000D08",
+                    border: "1px solid #143628",
+                    borderRadius: "0.75rem",
+                    color: "white",
+                  }}
+                />
+                <Bar dataKey="voltage" fill="#4ade80" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      )}
+    </>
+  );
+};
+
+export default Analytics;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+import { useEffect, useMemo, useState } from "react";
+import {
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  BarChart,
+  Bar,
+} from "recharts";
+import {
+  getDevices,
+  getDeviceLatest,
+  getDeviceHistory,
+  type DeviceLatest,
+  type DeviceListItem,
+} from "../services/deviceService";
+import { useNavigate, useParams } from "react-router-dom";
+import "../styles/analytics.css";
+
+type Snapshot = DeviceLatest;
+type Telemetry = DeviceLatest;
+
+type AnalyticsPoint = {
+  time: string;
+  timestampMs: number;
+  cells: number[];
+  current: number;
+  temps: number[];
+  packVoltage: number;
+  soc: number;
+};
+
+const parseLocalDateTimeMs = (value: string | null | undefined) => {
+  if (!value) return null;
+  const parsed = Date.parse(value.includes("T") ? value : value.replace(" ", "T"));
+  return Number.isNaN(parsed) ? null : parsed;
+};
+
+const parseCompactDeviceDateTime = (dateValue?: string, timeValue?: string) => {
+  if (!dateValue || !timeValue) return null;
+
+  const dateDigits = dateValue.replace(/\D/g, "");
+  const timeDigits = timeValue.replace(/\D/g, "");
+  if (dateDigits.length !== 6 || timeDigits.length !== 6) return null;
+
+  const day = Number(dateDigits.slice(0, 2));
+  const month = Number(dateDigits.slice(2, 4));
+  const year = 2000 + Number(dateDigits.slice(4, 6));
+  const hours = Number(timeDigits.slice(0, 2));
+  const minutes = Number(timeDigits.slice(2, 4));
+  const seconds = Number(timeDigits.slice(4, 6));
+
+  if (
+    [day, month, year, hours, minutes, seconds].some((value) =>
+      Number.isNaN(value)
+    )
+  ) {
+    return null;
+  }
+
+  return new Date(year, month - 1, day, hours, minutes, seconds).getTime();
+};
+
+const parseReceivedAtTimestamp = (receivedAt?: string) => {
+  if (!receivedAt) return null;
+  const normalized = receivedAt.includes("T")
+    ? receivedAt
+    : receivedAt.replace(" ", "T");
+  const parsed = Date.parse(normalized);
+  return Number.isNaN(parsed) ? null : parsed;
+};
+
+const getTelemetryTimestampMs = (telemetry: Telemetry) => {
+  return (
+    parseCompactDeviceDateTime(telemetry.date, telemetry.time) ??
+    parseReceivedAtTimestamp(telemetry.received_at) ??
+    Date.now()
+  );
+};
+
+const formatChartTime = (timestampMs: number) => {
+  return new Date(timestampMs).toLocaleTimeString("en-GB", {
+    hour12: false,
+  });
+};
+
+const Analytics = () => {
+  const navigate = useNavigate();
+  const { device_id: routeDeviceId } = useParams();
+  const [devices, setDevices] = useState<DeviceListItem[]>([]);
+  const [selectedDeviceId, setSelectedDeviceId] = useState<string | null>(null);
+  const [data, setData] = useState<AnalyticsPoint[]>([]);
+  const [latestSnapshot, setLatestSnapshot] = useState<Snapshot | null>(null);
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [mode, setMode] = useState<"cells" | "currents" | "temps">("cells");
+  const [historyStart, setHistoryStart] = useState(() => {
+    const date = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(
+      date.getDate()
+    ).padStart(2, "0")}T${String(date.getHours()).padStart(2, "0")}:${String(
+      date.getMinutes()
+    ).padStart(2, "0")}`;
+  });
+  const [historyEnd, setHistoryEnd] = useState(() => {
+    const date = new Date();
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(
+      date.getDate()
+    ).padStart(2, "0")}T${String(date.getHours()).padStart(2, "0")}:${String(
+      date.getMinutes()
+    ).padStart(2, "0")}`;
+  });
+  const [appliedHistoryRange, setAppliedHistoryRange] = useState(() => ({
+    start: historyStart,
+    end: historyEnd,
+  }));
+
+  const formatTimestamp = (date: Date) => {
+    const pad = (value: number) => String(value).padStart(2, "0");
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(
+      date.getDate()
+    )} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(
+      date.getSeconds()
+    )}`;
+  };
+
+  const toApiTimestamp = (value: string | null | undefined) => {
+    if (!value) return null;
+    if (value.includes("T")) {
+      const [datePart, timePartRaw] = value.split("T");
+      const timePart = timePartRaw.length === 5 ? `${timePartRaw}:00` : timePartRaw;
+      return `${datePart} ${timePart}`;
+    }
+    return value;
+  };
+
+  useEffect(() => {
+    const fetchDevices = async () => {
+      setLoading(true);
+      try {
+        const list = await getDevices();
+        setError("");
+        setDevices(list);
+        if (list.length > 0) {
+          const routeMatch = routeDeviceId
+            ? list.find((device) => device.d_id === routeDeviceId)
+            : null;
+          if (routeMatch) {
+            setSelectedDeviceId(routeMatch.d_id);
+          } else {
+            setSelectedDeviceId((prev) => prev ?? list[0].d_id);
+          }
+        }
+      } catch (err) {
+        setError("Failed to fetch devices");
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDevices();
+  }, [routeDeviceId]);
+
+  useEffect(() => {
+    if (!routeDeviceId || devices.length === 0) return;
+    const exists = devices.some(
+      (device) => device.d_id === routeDeviceId
+    );
+    if (exists) {
+      setSelectedDeviceId(routeDeviceId);
+    }
+  }, [devices, routeDeviceId]);
+
+  useEffect(() => {
+    if (!selectedDeviceId) return;
+
+    const endMs = parseLocalDateTimeMs(appliedHistoryRange.end);
+    const isRangeLive = !endMs || Math.abs(Date.now() - endMs) <= 2 * 60 * 1000;
+
+    const fetchHistory = async () => {
+      try {
+        const endTs = toApiTimestamp(appliedHistoryRange.end) ?? formatTimestamp(new Date());
+        const startTs =
+          toApiTimestamp(appliedHistoryRange.start) ??
+          formatTimestamp(new Date(Date.now() - 24 * 60 * 60 * 1000));
+        const history = await getDeviceHistory(
+          selectedDeviceId,
+          startTs,
+          endTs
+        );
+        if (!Array.isArray(history)) return;
+
+        const nextPoints = history
+          .slice()
+          .map((record) => {
+            const cells = Array.from({ length: 16 }, (_, i) => {
+              const key = `c${i + 1}` as keyof DeviceLatest;
+              return Number(record[key] ?? 0);
+            });
+            const temps = [record.t1, record.t2, record.t3, record.t4].map(
+              (value) => Number(value ?? 0)
+            );
+            const timestampMs = getTelemetryTimestampMs(record);
+            return {
+              time: formatChartTime(timestampMs),
+              timestampMs,
+              cells,
+              current: Number(record.pack_current ?? 0),
+              temps,
+              packVoltage: record.pack_voltage,
+              soc: Number(record.capacity ?? 0),
+            } as AnalyticsPoint;
+          })
+          .sort((a, b) => a.timestampMs - b.timestampMs);
+
+        setData(isRangeLive ? nextPoints.slice(-30) : nextPoints);
+
+        if (history.length > 0 && !isRangeLive) {
+          const latestInRange = history
+            .slice()
+            .sort(
+              (a, b) => getTelemetryTimestampMs(a) - getTelemetryTimestampMs(b)
+            )
+            .at(-1) as DeviceLatest;
+          setLatestSnapshot(latestInRange);
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    };
+
+    const fetchSnapshot = async () => {
+      try {
+        const snapshot = await getDeviceLatest(selectedDeviceId);
+        setError("");
+        setLatestSnapshot(snapshot);
+        const cells = Array.from({ length: 16 }, (_, i) => {
+          const key = `c${i + 1}` as keyof DeviceLatest;
+          return Number(snapshot[key] ?? 0);
+        });
+        const temps = [snapshot.t1, snapshot.t2, snapshot.t3, snapshot.t4].map(
+          (value) => Number(value ?? 0)
+        );
+        setData((prev) => {
+          const timestampMs = getTelemetryTimestampMs(snapshot);
+          const nextPoint: AnalyticsPoint = {
+            time: formatChartTime(timestampMs),
+            timestampMs,
+            cells,
+            current: Number(snapshot.pack_current ?? 0),
+            temps,
+            packVoltage: snapshot.pack_voltage,
+            soc: Number(snapshot.capacity ?? 0),
+          };
+
+          const lastPoint = prev[prev.length - 1];
+          if (lastPoint && lastPoint.timestampMs === nextPoint.timestampMs) {
+            const updated = [...prev];
+            updated[updated.length - 1] = nextPoint;
+            return updated;
+          }
+
+          if (lastPoint && nextPoint.timestampMs < lastPoint.timestampMs) {
+            return [...prev, nextPoint]
+              .sort((a, b) => a.timestampMs - b.timestampMs)
+              .slice(-30);
+          }
+
+          return [...prev.slice(-29), nextPoint];
+        });
+      } catch (err) {
+        setError("Failed to fetch snapshot");
+        console.error(err);
+      }
+    };
+
+    fetchHistory();
+
+    if (!isRangeLive) {
+      return;
+    }
+
+    fetchSnapshot();
+    const interval = setInterval(fetchSnapshot, 3000);
+
+    return () => clearInterval(interval);
+  }, [appliedHistoryRange, selectedDeviceId]);
+
+  useEffect(() => {
+    if (selectedDeviceId) {
+      navigate(`/analytics/${selectedDeviceId}`, { replace: true });
+    }
+  }, [navigate, selectedDeviceId]);
+
+  const summaryStats = useMemo(() => {
+    if (!latestSnapshot) {
+      return null;
+    }
+    const cellVoltages = Array.from({ length: 16 }, (_, i) => {
+      const key = `c${i + 1}` as keyof DeviceLatest;
+      return Number(latestSnapshot[key] ?? 0);
+    });
+    const temperatures = [latestSnapshot.t1, latestSnapshot.t2, latestSnapshot.t3, latestSnapshot.t4].map(
+      (value) => Number(value ?? 0)
+    );
+    const cellMax = Math.max(...cellVoltages);
+    const cellMin = Math.min(...cellVoltages);
+    const maxTemp = Math.max(...temperatures);
+    const imbalance = cellMax - cellMin;
+    
+    // Build individual cell voltage data for bar chart
+    const cellVoltageData = cellVoltages.map((voltage, index) => ({
+      cell: `C${index + 1}`,
+      voltage: parseFloat(voltage.toFixed(3)),
+    }));
+
+    return {
+      cellMax,
+      cellMin,
+      maxTemp,
+      imbalance,
+      cellVoltageData,
+    };
+  }, [latestSnapshot]);
+
+
+  //switching between current temp and cell v
+  const chartData = data.map((d) => {
+    const row: Record<string, number | string> = { time: d.time };
+
+    if (mode === "cells") {
+      d.cells.forEach((v, i) => (row[`cell${i + 1}`] = v));
+    }
+
+    if (mode === "currents") {
+      row.current = d.current;
+    }
+
+    if (mode === "temps") {
+      d.temps.forEach((v, i) => (row[`temp${i + 1}`] = v));
+    }
+
+    return row;
+  });
+
+
+  //cell order
+  const renderLines = () => {
+    if (mode === "cells") {
+      return Array.from({ length: 16 }, (_, i) => (
+        <Line
+          key={i}
+          type="monotone"
+          dataKey={`cell${i + 1}`}
+          stroke={`hsl(${i * 20}, 70%, 55%)`}
+          strokeWidth={1.8}
+          dot={false}
+        />
+      ));
+    }
+
+    if (mode === "currents") {
+      return (
+        <Line
+          type="monotone"
+          dataKey="current"
+          stroke="#22d3ee"
+          strokeWidth={2}
+          dot={false}
+        />
+      );
+      
+    }
+    
+
+    return (
+      <>
+        <Line
+          type="monotone"
+          dataKey="temp1"
+          stroke="#ff6b6b"
+          strokeWidth={2}
+          dot={false}
+        />
+        <Line
+          type="monotone"
+          dataKey="temp2"
+          stroke="#ffa94d"
+          strokeWidth={2}
+          dot={false}
+        />
+      </>
+    );
+  };
+
+  return (
+    <>
+      <div className="analytics-header">
+        <div className="analytics-title">
+          <div className="analytics-title-row">
+            <h2>Analytics</h2>
+            <span className="live-indicator">
+              <span className="live-dot" /> Live
+            </span>
+          </div>
+          <p>Device: {selectedDeviceId ?? "--"}</p>
+          <p>
+            DAddr: {latestSnapshot?.daddr ?? "--"} • Date: {latestSnapshot?.date ?? "--"} • Time:{" "}
+            {latestSnapshot?.time ?? "--"}
+          </p>
+        </div>
+
+        <div className="analytics-toolbar">
+          <div className="history-range">
+            <input
+              className="range-input"
+              type="datetime-local"
+              value={historyStart}
+              onChange={(event) => setHistoryStart(event.target.value)}
+            />
+            <input
+              className="range-input"
+              type="datetime-local"
+              value={historyEnd}
+              onChange={(event) => setHistoryEnd(event.target.value)}
+            />
+            <button
+              type="button"
+              className="ghost-btn"
+              onClick={() =>
+                setAppliedHistoryRange({
+                  start: historyStart,
+                  end: historyEnd,
+                })
+              }
+            >
+              Apply
+            </button>
+          </div>
+          <div className="device-selector">
+            {devices.map((device) => (
+              <button
+                key={device.d_id}
+                className={`device-chip ${
+                  selectedDeviceId === device.d_id ? "active" : ""
+                }`}
+                onClick={() => setSelectedDeviceId(device.d_id)}
+                type="button"
+              >
+                {device.d_id}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {error && <p className="error">{error}</p>}
+      {loading && <p>Loading devices...</p>}
+
+      {latestSnapshot && summaryStats && (
+        <div className="summary-cards">
+          <div className="summary-card">
+            <span>SOC</span>
+            <strong>{latestSnapshot.capacity}%</strong>
+            <p>State of charge</p>
+          </div>
+          <div className="summary-card">
+            <span>Pack Voltage</span>
+            <strong>{latestSnapshot.pack_voltage} V</strong>
+            <p>Nominal range</p>
+          </div>
+          <div className="summary-card">
+            <span>Current</span>
+            <strong>{latestSnapshot.pack_current} A</strong>
+            <p>
+              {latestSnapshot.pack_current >= 0 ? "Charging" : "Discharging"}
+            </p>
+          </div>
+          <div className="summary-card">
+            <span>Max Temp</span>
+            <strong>{summaryStats.maxTemp.toFixed(1)}°C</strong>
+            <p>Thermal headroom</p>
+          </div>
+          <div className="summary-card">
+            <span>Cell Imbalance</span>
+            <strong>{summaryStats.imbalance.toFixed(3)} V</strong>
+            <p>Max-min</p>
+          </div>
+        </div>
+      )}
+
+      <div className="mode-tabs">
+        <button
+          className={mode === "cells" ? "active" : ""}
+          onClick={() => setMode("cells")}
+        >
+          Cell Voltages
+        </button>
+
+        <button
+          className={mode === "currents" ? "active" : ""}
+          onClick={() => setMode("currents")}
+        >
+          Pack Current
+        </button>
+
+        <button
+          className={mode === "temps" ? "active" : ""}
+          onClick={() => setMode("temps")}
+        >
+          Temperature
+        </button>
+      </div>
+
+      <div className="chart-card-dark">
+        <div className="chart-header">
+          <div>
+            <h3>
+              {mode === "cells"
+                ? "Cell Voltages (V)"
+                : mode === "currents"
+                ? "Pack Current (A)"
+                : "Temperatures (°C)"}
+            </h3>
+            {mode === "cells" && summaryStats && (
+              <div className="cell-metrics">
+                <span>Max: {summaryStats.cellMax.toFixed(3)} V</span>
+                <span>Min: {summaryStats.cellMin.toFixed(3)} V</span>
+                <span>
+                  Difference: {summaryStats.imbalance.toFixed(3)} V
+                </span>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="chart-container chart-panel">
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={chartData}>
+              <CartesianGrid
+                stroke="rgba(255,255,255,0.05)"
+                vertical={false}
+              />
+              <XAxis
+                dataKey="time"
+                tick={{ fontSize: 11, fill: "rgba(255,255,255,0.5)" }}
+                axisLine={false}
+                tickLine={false}
+              />
+              <YAxis
+                tick={{ fontSize: 11, fill: "rgba(255,255,255,0.5)" }}
+                axisLine={false}
+                tickLine={false}
+                
+                domain={
+                  mode === "cells"
+                    ? [3, 4.3]
+                    : mode === "currents"
+                    ? ["auto", "auto"]
+                    : [20, 50]
+                }
+              />
+              <Tooltip
+              allowEscapeViewBox={{x:false,y:false}}
+                contentStyle={{
+                  background: "#002D20",
+                  border: "none",
+                  borderRadius: "1rem",
+                  color: "white",
+                  height:"100%"
+                }}
+              />
+              {renderLines()}
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+
+      {latestSnapshot && summaryStats && (
+        <div className="chart-card-dark">
+          <h3>Cell Voltage Distribution</h3>
+          <div className="chart-container bar-container">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={summaryStats.cellVoltageData}>
+                <CartesianGrid
+                  stroke="rgba(255,255,255,0.05)"
+                  vertical={false}
+                />
+                <XAxis
+                  dataKey="cell"
+                  tick={{ fontSize: 9, fill: "rgba(255,255,255,0.5)" }}
+                  axisLine={false}
+                  tickLine={false}
+                />
+                <YAxis
+                  tick={{ fontSize: 10, fill: "rgba(255,255,255,0.5)" }}
+                  axisLine={false}
+                  tickLine={false}
+                  domain={[3.6, 4.3]}
+                />
+                <Tooltip
+                  contentStyle={{
+                    background: "#000D08",
+                    border: "1px solid #143628",
+                    borderRadius: "0.75rem",
+                    color: "white",
+                  }}
+                />
+                <Bar dataKey="voltage" fill="#4ade80" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      )}
+    </>
+  );
+};
+
+export default Analytics;
+
