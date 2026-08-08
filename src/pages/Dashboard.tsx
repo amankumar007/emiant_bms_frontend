@@ -22,8 +22,10 @@ const Dashboard = () => {
         setDevices(list);
         if (list.length > 0) {
           const boardList = await getDeviceBoards(list[0].d_id);
-          const masterBoard = boardList.find((board) => board.daddr === 0);
-          const boardDaddr = masterBoard?.daddr ?? boardList[0]?.daddr ?? 0;
+          const boardsWithData = boardList.filter((board) => (board.totalRecords ?? 0) > 0);
+          const masterBoard = boardsWithData.find((board) => board.daddr === 0);
+          const boardDaddr =
+            masterBoard?.daddr ?? boardsWithData[0]?.daddr ?? boardList[0]?.daddr ?? 0;
           const snapshot = await getDeviceBoardLatest(list[0].d_id, boardDaddr);
           setLatest(snapshot);
         }
