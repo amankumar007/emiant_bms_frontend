@@ -16,6 +16,7 @@ const Auth = () => {
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
   const [showLoginPassword, setShowLoginPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
 
   const [regUsername, setRegUsername] = useState("");
   const [regEmail, setRegEmail] = useState("");
@@ -50,12 +51,15 @@ const Auth = () => {
 
     try {
       const response = await loginApi(loginEmail, loginPassword);
-      login({
-        id: response.user.id,
-        email: loginEmail,
-        role: response.user.role,
-        token: response.token,
-      });
+      login(
+        {
+          id: response.user.id,
+          email: loginEmail,
+          role: response.user.role,
+          token: response.token,
+        },
+        rememberMe
+      );
       navigate("/dashboard");
     } catch (err: unknown) {
       let message = "Login failed";
@@ -120,61 +124,35 @@ const Auth = () => {
     setRegPassword("");
   };
 
+  const handleForgotPassword = () => {
+    setError("");
+    setInfo("Password resets aren't self-service yet — contact your administrator to reset your password.");
+  };
+
   return (
     <div className="auth-wrapper">
       <div className="auth-left">
-        <div className="auth-left-content">
-          <div className="auth-logo">
-            <img src="https://www.emiant.in/static/images/Emiant%20logo%203@4x.png" 
-  alt="Emiant Logo" 
-  className="responsive-img"
-
-/> 
-          <h3 style={{ fontSize: 30 }}>BMS Monitoring Dashboard</h3>
-          </div>
-
-          <div className="auth-features">
-            <h3>Why Choose Emiant?</h3>
-            <ul className=".feature-grid">
-              <li>
-                <span className="feature-icon">📊</span>
-                <div>
-                  <strong>Real-time Monitoring</strong>
-                  <p>Track your systems live</p>
-                </div>
-              </li>
-              <li>
-                <span className="feature-icon">⚡</span>
-                <div>
-                  <strong>Energy Tracking</strong>
-                  <p>Optimize power consumption</p>
-                </div>
-              </li>
-              <li>
-                <span className="feature-icon">🔔</span>
-                <div>
-                  <strong>Safety Alerts</strong>
-                  <p>Instant notifications</p>
-                </div>
-              </li>
-
-              <li>
-                <span className="feature-icon">📈</span>
-                <div>
-                  <strong>Analytics & Reports</strong>
-                  <p>Data-driven insights</p>
-                </div>
-              </li>
-            </ul>
+        <div className="auth-brand-lockup">
+          <img
+            src="/emiant-logo.png"
+            alt="Emiant Innovations"
+            className="auth-brand-mark"
+          />
+          <div className="auth-brand-text">
+            <span className="auth-brand-word">
+              Emiant<sup className="auth-brand-tm">TM</sup>
+            </span>
+            <span className="auth-brand-sub">INNOVATIONS</span>
           </div>
         </div>
+        <p className="auth-tagline">Maximizing Battery Safety and Performance</p>
       </div>
 
       <div className="auth-right">
         <div className="auth-container">
           <div className="auth-header">
-            <h1>{isLogin ? "Welcome Back" : "Create Account"}</h1>
-            <p>{isLogin ? "Login to your account" : "Join us today"}</p>
+            <h1>CELL DOC</h1>
+            <p>{isLogin ? "Login to your account" : "Create your account"}</p>
 
             <div className="auth-tabs">
               <button
@@ -198,17 +176,21 @@ const Auth = () => {
             <div className="form-section">
               <div className="input-group">
                 <label>Email</label>
-                <input
-                  type="email"
-                  placeholder="your@email.com"
-                  value={loginEmail}
-                  onChange={(e) => setLoginEmail(e.target.value)}
-                />
+                <div className="icon-field">
+                  <span className="field-icon">✉</span>
+                  <input
+                    type="email"
+                    placeholder="your@email.com"
+                    value={loginEmail}
+                    onChange={(e) => setLoginEmail(e.target.value)}
+                  />
+                </div>
               </div>
 
               <div className="input-group">
                 <label>Password</label>
-                <div className="password-field">
+                <div className="icon-field password-field">
+                  <span className="field-icon">🔒</span>
                   <input
                     type={showLoginPassword ? "text" : "password"}
                     placeholder="••••••••"
@@ -222,6 +204,20 @@ const Auth = () => {
                     {showLoginPassword ? <FaEyeSlash /> : <FaEye />}
                   </span>
                 </div>
+              </div>
+
+              <div className="auth-row">
+                <label className="remember-me">
+                  <input
+                    type="checkbox"
+                    checked={rememberMe}
+                    onChange={(e) => setRememberMe(e.target.checked)}
+                  />
+                  Remember me
+                </label>
+                <span className="link" onClick={handleForgotPassword}>
+                  Forgot Password?
+                </span>
               </div>
 
               <button
@@ -245,16 +241,6 @@ const Auth = () => {
           ) : (
             // REGISTER FORM
             <div className="form-section">
-              <div className="input-group">
-                <label>Username</label>
-                <input
-                  type="text"
-                  placeholder="your_username"
-                  value={regUsername}
-                  onChange={(e) => setRegUsername(e.target.value)}
-                />
-              </div>
-
               <div className="input-group">
                 <label>Username</label>
                 <input
