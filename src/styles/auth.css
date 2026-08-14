@@ -1,10 +1,9 @@
-@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&display=swap');
 .auth-wrapper {
   min-height: 100vh;
   background: #050e0a;
   display: flex;
-  font-family: "Syne", sans-serif;
-  font-weight: 700;
+  font-family: "JetBrains Mono", "Fira Code", ui-monospace, SFMono-Regular,
+    Menlo, Consolas, monospace;
 }
 
 .auth-left {
@@ -16,6 +15,13 @@
   justify-content: center;
   color: #ffffff;
   min-height: 100vh;
+  position: relative;
+  overflow: hidden;
+}
+
+.auth-left-content {
+  position: relative;
+  z-index: 1;
 }
 
 .auth-brand-lockup {
@@ -439,7 +445,8 @@
 
   .auth-left {
     min-height: auto;
-    padding: 40px 30px;
+    max-height: 260px;
+    padding: 30px 24px;
     align-items: center;
     text-align: center;
   }
@@ -447,11 +454,14 @@
   .auth-brand-lockup {
     flex-direction: column;
     text-align: center;
+    gap: 10px;
+    margin-bottom: 10px;
   }
 
   .auth-tagline {
     border-left: none;
     padding-left: 0;
+    font-size: 12px;
   }
 
   .auth-right {
@@ -471,6 +481,7 @@
 @media (max-width: 480px) {
   .auth-left {
     padding: 30px 20px;
+    max-height: 220px;
   }
 
   .auth-brand-mark {
