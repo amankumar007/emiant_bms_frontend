@@ -1,14 +1,14 @@
 import { useEffect, useRef } from "react";
 
 interface ParticleBackgroundProps {
-  color?: string;       // base particle/line color
+  color?: string;
   particleCount?: number;
-  maxDistance?: number; // px, max distance to draw a connecting line
-  mouseRadius?: number; // px, radius of mouse influence
+  maxDistance?: number;
+  mouseRadius?: number;
 }
 
 const ParticleBackground = ({
-  color = "108, 194, 106", // light green, as "r, g, b" (no # here, used in rgba())
+  color = "108, 194, 106",
   particleCount = 70,
   maxDistance = 140,
   mouseRadius = 160,
@@ -58,18 +58,24 @@ const ParticleBackground = ({
       mouse.y = -9999;
     };
 
+    const handleTouchMove = (e: TouchEvent) => {
+      const rect = canvas.getBoundingClientRect();
+      const touch = e.touches[0];
+      mouse.x = touch.clientX - rect.left;
+      mouse.y = touch.clientY - rect.top;
+    };
+
     window.addEventListener("resize", handleResize);
     canvas.addEventListener("mousemove", handleMouseMove);
     canvas.addEventListener("mouseleave", handleMouseLeave);
+    canvas.addEventListener("touchmove", handleTouchMove);
 
     let animationId: number;
 
     const animate = () => {
       ctx.clearRect(0, 0, width, height);
 
-      // Update + draw particles
       for (const p of particles) {
-        // Gentle mouse repulsion
         const dx = p.x - mouse.x;
         const dy = p.y - mouse.y;
         const dist = Math.sqrt(dx * dx + dy * dy);
@@ -79,13 +85,11 @@ const ParticleBackground = ({
           p.vy += (dy / dist) * force * 0.03;
         }
 
-        // Drift + damping so speed doesn't blow up
         p.vx *= 0.98;
         p.vy *= 0.98;
         p.x += p.vx;
         p.y += p.vy;
 
-        // Wrap around edges
         if (p.x < 0) p.x = width;
         if (p.x > width) p.x = 0;
         if (p.y < 0) p.y = height;
@@ -97,7 +101,6 @@ const ParticleBackground = ({
         ctx.fill();
       }
 
-      // Draw connecting lines
       for (let i = 0; i < particles.length; i++) {
         for (let j = i + 1; j < particles.length; j++) {
           const a = particles[i];
@@ -127,6 +130,7 @@ const ParticleBackground = ({
       window.removeEventListener("resize", handleResize);
       canvas.removeEventListener("mousemove", handleMouseMove);
       canvas.removeEventListener("mouseleave", handleMouseLeave);
+      canvas.removeEventListener("touchmove", handleTouchMove);
     };
   }, [color, particleCount, maxDistance, mouseRadius]);
 
