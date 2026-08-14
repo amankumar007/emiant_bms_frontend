@@ -1,9 +1,11 @@
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&display=swap');
+
 .auth-wrapper {
   min-height: 100vh;
   background: #050e0a;
   display: flex;
-  font-family: "JetBrains Mono", "Fira Code", ui-monospace, SFMono-Regular,
-    Menlo, Consolas, monospace;
+  font-family: "Syne", sans-serif;
+  font-weight: 700;
 }
 
 .auth-left {
