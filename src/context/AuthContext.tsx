@@ -9,7 +9,7 @@ type User = {
 
 type AuthContextType = {
   user: User | null;
-  login: (user: User) => void;
+  login: (user: User, rememberMe?: boolean) => void;
   logout: () => void;
   isLoading: boolean; //extra for reloading error
 };
@@ -21,23 +21,37 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const savedUser = localStorage.getItem("user");
+    // "Remember me" was checked -> data lives in localStorage (persists across browser restarts).
+    // Otherwise it lives in sessionStorage (cleared when the tab/browser closes).
+    const savedUser =
+      localStorage.getItem("user") || sessionStorage.getItem("user");
     if (savedUser) setUser(JSON.parse(savedUser));
     setIsLoading(false);
   }, []);
 
-  const login = (user: User) => {
+  const login = (user: User, rememberMe: boolean = false) => {
     setUser(user);
-    localStorage.setItem("user", JSON.stringify(user)); // Store for persistence
-    localStorage.setItem("token", user.token); // Add this line
-    localStorage.setItem("role", user.role);
+    const store = rememberMe ? localStorage : sessionStorage;
+    const other = rememberMe ? sessionStorage : localStorage;
+
+    // Make sure we don't leave stale copies in the other storage.
+    other.removeItem("user");
+    other.removeItem("token");
+    other.removeItem("role");
+
+    store.setItem("user", JSON.stringify(user));
+    store.setItem("token", user.token);
+    store.setItem("role", user.role);
   };
 
   const logout = () => {
     setUser(null);
-    localStorage.removeItem("user"); // Clear on logout
-    localStorage.removeItem("token"); // Add this line
+    localStorage.removeItem("user");
+    localStorage.removeItem("token");
     localStorage.removeItem("role");
+    sessionStorage.removeItem("user");
+    sessionStorage.removeItem("token");
+    sessionStorage.removeItem("role");
   };
 
   return (
