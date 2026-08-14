@@ -6,6 +6,7 @@ import { loginApi } from "../services/authService";
 import { registerApi } from "../services/authService";
 import axios from "axios";
 import { useAuth } from "../context/AuthContext";
+import ParticleBackground from "../components/ParticleBackground";
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -131,21 +132,24 @@ const Auth = () => {
 
   return (
     <div className="auth-wrapper">
-      <div className="auth-left">
-        <div className="auth-brand-lockup">
-          <img
-            src="/emiant-logo.png"
-            alt="Emiant Innovations"
-            className="auth-brand-mark"
-          />
-          <div className="auth-brand-text">
-            <span className="auth-brand-word">
-              Emiant<sup className="auth-brand-tm">TM</sup>
-            </span>
-            <span className="auth-brand-sub">INNOVATIONS</span>
+      <div className="auth-left" style={{ position: "relative", overflow: "hidden" }}>
+        <ParticleBackground />
+        <div style={{ position: "relative", zIndex: 1 }}>
+          <div className="auth-brand-lockup">
+            <img
+              src="/emiant-logo.png"
+              alt="Emiant Innovations"
+              className="auth-brand-mark"
+            />
+            <div className="auth-brand-text">
+              <span className="auth-brand-word">
+                Emiant<sup className="auth-brand-tm">TM</sup>
+              </span>
+              <span className="auth-brand-sub">INNOVATIONS</span>
+            </div>
           </div>
+          <p className="auth-tagline">Maximizing Battery Safety and Performance</p>
         </div>
-        <p className="auth-tagline">Maximizing Battery Safety and Performance</p>
       </div>
 
       <div className="auth-right">
