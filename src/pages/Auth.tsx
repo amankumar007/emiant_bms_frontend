@@ -132,9 +132,9 @@ const Auth = () => {
 
   return (
     <div className="auth-wrapper">
-      <div className="auth-left" style={{ position: "relative", overflow: "hidden" }}>
+      <div className="auth-left">
         <ParticleBackground />
-        <div style={{ position: "relative", zIndex: 1 }}>
+        <div className="auth-left-content">
           <div className="auth-brand-lockup">
             <img
               src="/emiant-logo.png"
