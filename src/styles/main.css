@@ -203,6 +203,14 @@ body {
     width: 100%;
     z-index: 1000;
   }
+
+  .header .logo img {
+  width: 44px;
+  height: 44px;
+  object-fit: contain;
+  display: block;
+}
+  
   .sidebar.open {
     left: 0;
   }
