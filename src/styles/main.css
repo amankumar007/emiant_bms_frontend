@@ -192,6 +192,12 @@ body {
     z-index: 1000;
     transition: left 0.3s ease;
   }
+
+  .logo img {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+}
   .header {
     position: fixed;
     width: 100%;
