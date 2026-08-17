@@ -11,7 +11,7 @@ const Header = ({ toggle }: { toggle: () => void }) => {
   return (
     <header className="header">
 
-      <div className="logo"><img src="/emiant-logo.png" alt="Emiant" /> </div>
+      <div className="logo"><img src="/emiant-logo (2).png" alt="Emiant" /> </div>
       <div className="user">{shortEmail(user?.email)}
          <button className="menu-btn" onClick={toggle}>
         ☰
