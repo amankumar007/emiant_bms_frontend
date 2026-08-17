@@ -1,4 +1,5 @@
 import { useAuth } from "../context/AuthContext";
+
 const Header = ({ toggle }: { toggle: () => void }) => {
   const {  user } = useAuth();
   const shortEmail = (email?: string) => {
@@ -10,7 +11,7 @@ const Header = ({ toggle }: { toggle: () => void }) => {
   return (
     <header className="header">
 
-      <div className="logo"><img src="https://www.emiant.in/static/images/Emiant%20logo%203@4x.png" /> </div>
+      <div className="logo"><img src="/emiant-logo.png" alt="Emiant" /> </div>
       <div className="user">{shortEmail(user?.email)}
          <button className="menu-btn" onClick={toggle}>
         ☰
