@@ -37,7 +37,6 @@ const Dashboard = () => {
         setLoading(false);
       }
     };
-
     fetchDashboardData();
   }, []);
 
@@ -51,11 +50,10 @@ const Dashboard = () => {
     : "--";
 
   return (
-    <div>
-      <h2>Dashboard</h2>
+    <div className="dashboard-page">
+      <h2 className="dashboard-title">Dashboard</h2>
       {error && <p className="error">{error}</p>}
-      {loading && <p>Loading dashboard data...</p>}
-
+      {loading && <p className="dashboard-loading">Loading dashboard data...</p>}
       <div className="kpi-grid">
         <div className="kpi-card">
           <p>Temperature</p>
@@ -64,7 +62,6 @@ const Dashboard = () => {
             T1:{latest?.t1 ?? 0} T2:{latest?.t2 ?? 0} T3:{latest?.t3 ?? 0} T4:{latest?.t4 ?? 0} DT1:{latest?.dt1 ?? 0} DT2:{latest?.dt2 ?? 0}
           </span>
         </div>
-
         <div className="kpi-card">
           <p>Voltage</p>
           <h1>{latest?.pack_voltage ?? 0}V</h1>
@@ -73,13 +70,11 @@ const Dashboard = () => {
               .join(" | ")}
           </span>
         </div>
-
         <div className="kpi-card">
           <p>Current</p>
           <h1>{latest?.pack_current ?? 0}A</h1>
           <span>Last updated: {lastUpdated}</span>
         </div>
-
         <div className="kpi-card">
           <p>Status</p>
           <h1>{latest?.capacity ?? 0}%</h1>
