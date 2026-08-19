@@ -3,7 +3,7 @@ import axios from "axios";
 // Add a request interceptor to automatically include token
 axios.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem("token");
+    const token = localStorage.getItem("token") || sessionStorage.getItem("token");
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -29,6 +29,9 @@ axios.interceptors.response.use(
       localStorage.removeItem("token");
       localStorage.removeItem("user");
       localStorage.removeItem("role");
+      sessionStorage.removeItem("token");
+      sessionStorage.removeItem("user");
+      sessionStorage.removeItem("role");
 
       const isAlreadyOnPublicAuthRoute =
         window.location.pathname === "/" || window.location.pathname === "/login";
