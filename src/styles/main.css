@@ -25,9 +25,10 @@ body {
 }
 
 .logo img {
-  max-width: 140px;
-  height: auto;
+  width: 40px;
+  height: 40px;
   object-fit: contain;
+  display: block;
 }
 
 .menu-btn {
@@ -39,7 +40,6 @@ body {
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 10px;
   cursor: pointer;
-
   display: flex;
   align-items: center;
   justify-content: center;
@@ -79,7 +79,6 @@ body {
   padding: 14px 10px;
   transition: width 0.3s, transform 0.3s;
   border-right: 1px solid rgba(255, 255, 255, 0.08);
-
   display: flex;
   flex-direction: column;
 }
@@ -193,24 +192,12 @@ body {
     transition: left 0.3s ease;
   }
 
-  .logo img {
-  width: 40px;
-  height: 40px;
-  object-fit: contain;
-}
   .header {
     position: fixed;
     width: 100%;
     z-index: 1000;
   }
 
-  .header .logo img {
-  width: 44px;
-  height: 44px;
-  object-fit: contain;
-  display: block;
-}
-  
   .sidebar.open {
     left: 0;
   }
